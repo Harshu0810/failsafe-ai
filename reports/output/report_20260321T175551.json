@@ -1,0 +1,103 @@
+{
+  "session_id": "20260321T175551",
+  "started_at": "2026-03-21T17:55:51.966942+00:00",
+  "total": 6,
+  "failed": 6,
+  "passed": 0,
+  "critical": 6,
+  "severity_breakdown": {
+    "critical": 6
+  },
+  "entries": [
+    {
+      "timestamp": "2026-03-21T17:56:48.649413+00:00",
+      "injection_name": "undefined_variable",
+      "scenario": "Appended a reference to an undefined variable '__THIS_DOES_NOT_EXIST__'. Expected: NameError.",
+      "error_type": "TimeoutError",
+      "error_message": "Execution exceeded the sandbox time limit.",
+      "root_cause": "Execution exceeded the configured sandbox time limit \u2014 likely an infinite loop or blocking I/O.",
+      "category": "Timeout / Infinite Loop",
+      "severity": "critical",
+      "execution_time_ms": 20024.58059997298,
+      "timed_out": true,
+      "passed": false,
+      "short_fix": "Refactor loops to guarantee termination, or add an explicit iteration cap.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-21T17:58:02.862277+00:00",
+      "injection_name": "division_by_zero",
+      "scenario": "Appended '1 / 0'. Expected: ZeroDivisionError.",
+      "error_type": "TimeoutError",
+      "error_message": "Execution exceeded the sandbox time limit.",
+      "root_cause": "Execution exceeded the configured sandbox time limit \u2014 likely an infinite loop or blocking I/O.",
+      "category": "Timeout / Infinite Loop",
+      "severity": "critical",
+      "execution_time_ms": 20125.53850002587,
+      "timed_out": true,
+      "passed": false,
+      "short_fix": "Refactor loops to guarantee termination, or add an explicit iteration cap.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-21T17:59:05.796517+00:00",
+      "injection_name": "infinite_loop",
+      "scenario": "Appended a loop that spins for 10 s, simulating a timeout scenario. The sandbox execution limit will trigger before it exits.",
+      "error_type": "TimeoutError",
+      "error_message": "Execution exceeded the sandbox time limit.",
+      "root_cause": "Execution exceeded the configured sandbox time limit \u2014 likely an infinite loop or blocking I/O.",
+      "category": "Timeout / Infinite Loop",
+      "severity": "critical",
+      "execution_time_ms": 20028.75390002737,
+      "timed_out": true,
+      "passed": false,
+      "short_fix": "Refactor loops to guarantee termination, or add an explicit iteration cap.",
+      "ollama_enhanced": "The error message is indicating that your code has been running for too long, exceeding the allowed time limit. This is likely due to an infinite loop or blocking I/O operation that's preventing your program from completing. To resolve this issue, refactor any loops to ensure they terminate properly or add a cap to prevent excessive iteration."
+    },
+    {
+      "timestamp": "2026-03-21T18:00:03.702724+00:00",
+      "injection_name": "recursion_error",
+      "scenario": "Appended infinite recursion call. Expected: RecursionError.",
+      "error_type": "TimeoutError",
+      "error_message": "Execution exceeded the sandbox time limit.",
+      "root_cause": "Execution exceeded the configured sandbox time limit \u2014 likely an infinite loop or blocking I/O.",
+      "category": "Timeout / Infinite Loop",
+      "severity": "critical",
+      "execution_time_ms": 20021.1738999933,
+      "timed_out": true,
+      "passed": false,
+      "short_fix": "Refactor loops to guarantee termination, or add an explicit iteration cap.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-21T18:01:00.634501+00:00",
+      "injection_name": "wrong_type_operation",
+      "scenario": "Appended 'string + integer' operation. Expected: TypeError.",
+      "error_type": "TimeoutError",
+      "error_message": "Execution exceeded the sandbox time limit.",
+      "root_cause": "Execution exceeded the configured sandbox time limit \u2014 likely an infinite loop or blocking I/O.",
+      "category": "Timeout / Infinite Loop",
+      "severity": "critical",
+      "execution_time_ms": 20028.458399989177,
+      "timed_out": true,
+      "passed": false,
+      "short_fix": "Refactor loops to guarantee termination, or add an explicit iteration cap.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-21T18:01:57.430947+00:00",
+      "injection_name": "key_error",
+      "scenario": "Appended dictionary access with a non-existent key. Expected: KeyError.",
+      "error_type": "TimeoutError",
+      "error_message": "Execution exceeded the sandbox time limit.",
+      "root_cause": "Execution exceeded the configured sandbox time limit \u2014 likely an infinite loop or blocking I/O.",
+      "category": "Timeout / Infinite Loop",
+      "severity": "critical",
+      "execution_time_ms": 20022.9674000293,
+      "timed_out": true,
+      "passed": false,
+      "short_fix": "Refactor loops to guarantee termination, or add an explicit iteration cap.",
+      "ollama_enhanced": ""
+    }
+  ]
+}

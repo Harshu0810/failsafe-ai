@@ -1,0 +1,59 @@
+{
+  "session_id": "20260322T141623",
+  "started_at": "2026-03-22T14:16:23.379379+00:00",
+  "total": 3,
+  "failed": 3,
+  "passed": 0,
+  "critical": 1,
+  "severity_breakdown": {
+    "high": 2,
+    "critical": 1
+  },
+  "entries": [
+    {
+      "timestamp": "2026-03-22T14:17:03.776493+00:00",
+      "injection_name": "undefined_variable",
+      "scenario": "Appended a reference to an undefined variable '__THIS_DOES_NOT_EXIST__'. Expected: NameError.",
+      "error_type": "NameError",
+      "error_message": "name '__THIS_DOES_NOT_EXIST__' is not defined",
+      "root_cause": "A variable or function is used before it is defined or imported.",
+      "category": "Undefined Reference",
+      "severity": "high",
+      "execution_time_ms": 153.52819999679923,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Define or import the variable before using it.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T14:18:30.403397+00:00",
+      "injection_name": "infinite_loop",
+      "scenario": "Injected a loop that spins for 10 s, simulating a timeout scenario. The sandbox execution limit will trigger before it exits.",
+      "error_type": "NameError",
+      "error_message": "name 'st' is not defined. Did you mean: 'set'?",
+      "root_cause": "A variable or function is used before it is defined or imported.",
+      "category": "Undefined Reference",
+      "severity": "high",
+      "execution_time_ms": 10616.87000002712,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Define or import the variable before using it.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T14:19:08.823254+00:00",
+      "injection_name": "recursion_error",
+      "scenario": "Appended infinite recursion call. Expected: RecursionError.",
+      "error_type": "RecursionError",
+      "error_message": "maximum recursion depth exceeded",
+      "root_cause": "A function calls itself indefinitely with no base case.",
+      "category": "Infinite Recursion",
+      "severity": "critical",
+      "execution_time_ms": 346.3344000047073,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Add a base case to every recursive function.",
+      "ollama_enhanced": ""
+    }
+  ]
+}

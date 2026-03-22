@@ -1,0 +1,89 @@
+{
+  "session_id": "20260322T100433",
+  "started_at": "2026-03-22T10:04:33.511764+00:00",
+  "total": 5,
+  "failed": 5,
+  "passed": 0,
+  "critical": 2,
+  "severity_breakdown": {
+    "high": 3,
+    "critical": 2
+  },
+  "entries": [
+    {
+      "timestamp": "2026-03-22T10:05:11.856282+00:00",
+      "injection_name": "undefined_variable",
+      "scenario": "Appended a reference to an undefined variable '__THIS_DOES_NOT_EXIST__'. Expected: NameError.",
+      "error_type": "NameError",
+      "error_message": "name '__THIS_DOES_NOT_EXIST__' is not defined",
+      "root_cause": "A variable or function is used before it is defined or imported.",
+      "category": "Undefined Reference",
+      "severity": "high",
+      "execution_time_ms": 157.45609998703003,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Define or import the variable before using it.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T10:05:50.153782+00:00",
+      "injection_name": "division_by_zero",
+      "scenario": "Appended '1 / 0'. Expected: ZeroDivisionError.",
+      "error_type": "ZeroDivisionError",
+      "error_message": "division by zero",
+      "root_cause": "A division or modulo operation has zero as its divisor.",
+      "category": "Arithmetic Error",
+      "severity": "critical",
+      "execution_time_ms": 237.3084999853745,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Guard every division with a denominator != 0 check.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T10:07:07.507781+00:00",
+      "injection_name": "infinite_loop",
+      "scenario": "Appended a loop that spins for 10 s, simulating a timeout scenario. The sandbox execution limit will trigger before it exits.",
+      "error_type": "NameError",
+      "error_message": "name 'st' is not defined. Did you mean: 'set'?",
+      "root_cause": "A variable or function is used before it is defined or imported.",
+      "category": "Undefined Reference",
+      "severity": "high",
+      "execution_time_ms": 11393.48940004129,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Define or import the variable before using it.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T10:07:50.553655+00:00",
+      "injection_name": "recursion_error",
+      "scenario": "Appended infinite recursion call. Expected: RecursionError.",
+      "error_type": "RecursionError",
+      "error_message": "maximum recursion depth exceeded",
+      "root_cause": "A function calls itself indefinitely with no base case.",
+      "category": "Infinite Recursion",
+      "severity": "critical",
+      "execution_time_ms": 953.30880000256,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Add a base case to every recursive function.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T10:08:31.103773+00:00",
+      "injection_name": "key_error",
+      "scenario": "Appended dictionary access with a non-existent key. Expected: KeyError.",
+      "error_type": "KeyError",
+      "error_message": "'__missing_key__'",
+      "root_cause": "A dictionary (or DataFrame) was accessed with a key that does not exist.",
+      "category": "Missing Key / Column",
+      "severity": "high",
+      "execution_time_ms": 259.5996999880299,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Validate that all expected keys/columns exist before accessing them.",
+      "ollama_enhanced": ""
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "session_id": "20260322T135644",
+  "started_at": "2026-03-22T13:56:44.755666+00:00",
+  "total": 5,
+  "failed": 5,
+  "passed": 0,
+  "critical": 2,
+  "severity_breakdown": {
+    "high": 2,
+    "critical": 2,
+    "medium": 1
+  },
+  "entries": [
+    {
+      "timestamp": "2026-03-22T13:57:22.397444+00:00",
+      "injection_name": "undefined_variable",
+      "scenario": "Appended a reference to an undefined variable '__THIS_DOES_NOT_EXIST__'. Expected: NameError.",
+      "error_type": "NameError",
+      "error_message": "name '__THIS_DOES_NOT_EXIST__' is not defined",
+      "root_cause": "A variable or function is used before it is defined or imported.",
+      "category": "Undefined Reference",
+      "severity": "high",
+      "execution_time_ms": 207.3625000193715,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Define or import the variable before using it.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T13:58:03.803729+00:00",
+      "injection_name": "division_by_zero",
+      "scenario": "Appended '1 / 0'. Expected: ZeroDivisionError.",
+      "error_type": "ZeroDivisionError",
+      "error_message": "division by zero",
+      "root_cause": "A division or modulo operation has zero as its divisor.",
+      "category": "Arithmetic Error",
+      "severity": "critical",
+      "execution_time_ms": 3257.5246000196785,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Guard every division with a denominator != 0 check.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T13:58:51.935295+00:00",
+      "injection_name": "infinite_loop",
+      "scenario": "Appended a loop that spins for 10 s, simulating a timeout scenario. The sandbox execution limit will trigger before it exits.",
+      "error_type": "NameError",
+      "error_message": "name 'st' is not defined. Did you mean: 'set'?",
+      "root_cause": "A variable or function is used before it is defined or imported.",
+      "category": "Undefined Reference",
+      "severity": "high",
+      "execution_time_ms": 10209.983800072223,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Define or import the variable before using it.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T13:59:29.785323+00:00",
+      "injection_name": "recursion_error",
+      "scenario": "Appended infinite recursion call. Expected: RecursionError.",
+      "error_type": "RecursionError",
+      "error_message": "maximum recursion depth exceeded",
+      "root_cause": "A function calls itself indefinitely with no base case.",
+      "category": "Infinite Recursion",
+      "severity": "critical",
+      "execution_time_ms": 353.9187000133097,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Add a base case to every recursive function.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-22T14:00:07.269108+00:00",
+      "injection_name": "wrong_type_operation",
+      "scenario": "Appended 'string + integer' operation. Expected: TypeError.",
+      "error_type": "TypeError",
+      "error_message": "can only concatenate str (not \"int\") to str",
+      "root_cause": "A function received an argument of the wrong type.",
+      "category": "Type Mismatch",
+      "severity": "medium",
+      "execution_time_ms": 273.0915999272838,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Cast operands to a compatible type before performing the operation.",
+      "ollama_enhanced": ""
+    }
+  ]
+}

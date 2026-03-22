@@ -1,0 +1,7 @@
+2026-03-22 20:02:45 | DEBUG    | failsafe.session | Recorded entry: missing_values → PASS
+2026-03-22 20:02:46 | DEBUG    | failsafe.session | Recorded entry: wrong_dtypes → PASS
+2026-03-22 20:02:48 | DEBUG    | failsafe.session | Recorded entry: empty_dataset → ValueError
+2026-03-22 20:02:49 | DEBUG    | failsafe.session | Recorded entry: null_column → PASS
+2026-03-22 20:02:51 | DEBUG    | failsafe.session | Recorded entry: duplicate_rows → PASS
+2026-03-22 20:02:52 | DEBUG    | failsafe.session | Recorded entry: wrong_column_name → PASS
+2026-03-22 20:02:54 | DEBUG    | failsafe.session | Recorded entry: extra_whitespace → PASS

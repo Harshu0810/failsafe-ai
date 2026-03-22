@@ -1,0 +1,16 @@
+id,name,age,salary,department,joined_date,performance_score
+1,Alice Johnson,29,72000.50,Engineering,2021-03-15,4.5
+2,Bob Smith,34,85000.00,Marketing,2019-07-22,3.8
+3,Carol White,41,95000.00,Engineering,2017-01-10,4.9
+4,David Brown,27,61000.00,Sales,2022-09-01,3.2
+5,Eve Davis,38,78000.00,HR,2018-06-30,4.1
+6,Frank Miller,52,112000.00,Engineering,2015-04-17,4.7
+7,Grace Wilson,33,69000.00,Marketing,2020-11-05,3.5
+8,Henry Moore,45,99000.00,Engineering,2016-08-23,4.8
+9,Iris Taylor,31,73500.00,Sales,2021-12-01,3.9
+10,Jack Anderson,28,58000.00,HR,2023-02-14,3.1
+11,Karen Thomas,36,82000.00,Engineering,2019-05-20,4.3
+12,Leo Jackson,50,105000.00,Marketing,2014-10-08,4.6
+13,Mia Harris,26,55000.00,Sales,2023-07-19,2.9
+14,Nathan Martin,44,91000.00,Engineering,2017-03-27,4.4
+15,Olivia Garcia,39,86000.00,HR,2018-09-14,4.2

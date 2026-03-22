@@ -1,0 +1,88 @@
+{
+  "session_id": "20260320T134245",
+  "started_at": "2026-03-20T13:42:45.795894+00:00",
+  "total": 5,
+  "failed": 5,
+  "passed": 0,
+  "critical": 5,
+  "severity_breakdown": {
+    "critical": 5
+  },
+  "entries": [
+    {
+      "timestamp": "2026-03-20T13:43:20.147280+00:00",
+      "injection_name": "undefined_variable",
+      "scenario": "Appended a reference to an undefined variable '__THIS_DOES_NOT_EXIST__'. Expected: NameError.",
+      "error_type": "ModuleNotFoundError",
+      "error_message": "No module named 'llama_index'",
+      "root_cause": "An imported module is not installed or the import path is wrong.",
+      "category": "Missing Dependency",
+      "severity": "critical",
+      "execution_time_ms": 252.95610004104674,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Install the missing package with pip and pin the version in requirements.txt.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-20T13:44:01.014826+00:00",
+      "injection_name": "file_not_found",
+      "scenario": "Appended open() call for a non-existent file path. Expected: FileNotFoundError.",
+      "error_type": "ModuleNotFoundError",
+      "error_message": "No module named 'llama_index'",
+      "root_cause": "An imported module is not installed or the import path is wrong.",
+      "category": "Missing Dependency",
+      "severity": "critical",
+      "execution_time_ms": 6692.329799989238,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Install the missing package with pip and pin the version in requirements.txt.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-20T13:44:38.107564+00:00",
+      "injection_name": "division_by_zero",
+      "scenario": "Appended '1 / 0'. Expected: ZeroDivisionError.",
+      "error_type": "ModuleNotFoundError",
+      "error_message": "No module named 'llama_index'",
+      "root_cause": "An imported module is not installed or the import path is wrong.",
+      "category": "Missing Dependency",
+      "severity": "critical",
+      "execution_time_ms": 2825.4288000171073,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Install the missing package with pip and pin the version in requirements.txt.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-20T13:45:14.329408+00:00",
+      "injection_name": "recursion_error",
+      "scenario": "Appended infinite recursion call. Expected: RecursionError.",
+      "error_type": "ModuleNotFoundError",
+      "error_message": "No module named 'llama_index'",
+      "root_cause": "An imported module is not installed or the import path is wrong.",
+      "category": "Missing Dependency",
+      "severity": "critical",
+      "execution_time_ms": 2082.892600039486,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Install the missing package with pip and pin the version in requirements.txt.",
+      "ollama_enhanced": ""
+    },
+    {
+      "timestamp": "2026-03-20T13:45:50.006511+00:00",
+      "injection_name": "attribute_error",
+      "scenario": "Called a non-existent method on a plain object. Expected: AttributeError.",
+      "error_type": "ModuleNotFoundError",
+      "error_message": "No module named 'llama_index'",
+      "root_cause": "An imported module is not installed or the import path is wrong.",
+      "category": "Missing Dependency",
+      "severity": "critical",
+      "execution_time_ms": 1535.5564000201412,
+      "timed_out": false,
+      "passed": false,
+      "short_fix": "Install the missing package with pip and pin the version in requirements.txt.",
+      "ollama_enhanced": ""
+    }
+  ]
+}
