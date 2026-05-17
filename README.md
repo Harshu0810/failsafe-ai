@@ -1,3 +1,12 @@
+---
+title: FailSafe AI
+emoji: ⚡
+colorFrom: red
+colorTo: orange
+sdk: docker
+pinned: false
+short_description: System Failure Simulator & Debug Assistant
+---
 # ⚡ FailSafe AI — System Failure Simulator & Debug Assistant
 
 > Inject failures. Observe behaviour. Diagnose root causes. Suggest fixes.
