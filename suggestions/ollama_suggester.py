@@ -122,6 +122,55 @@ class OllamaSuggester:
         suggestion.ollama_enhanced = enhanced
         return enhanced
 
+    def enhance_stream(self, analysis: AnalysisResult, suggestion: Suggestion):
+        """
+        Yields LLM-enhanced explanation string tokens as they arrive.
+        The suggestion object is mutated in-place (ollama_enhanced field) upon completion.
+        """
+        if not self.is_available():
+            yield ""
+            return
+
+        prompt = _USER_TEMPLATE.format(
+            error_type=analysis.error_type or "Unknown",
+            error_message=analysis.error_message or "N/A",
+            category=analysis.category,
+            root_cause=analysis.root_cause,
+            short_fix=suggestion.short_fix,
+        )
+
+        payload = {
+            "model": self.model,
+            "system": _SYSTEM_PROMPT,
+            "prompt": prompt,
+            "stream": True,
+            "options": {
+                "num_predict": 200,
+                "temperature": 0.3,
+            },
+        }
+
+        enhanced_full = ""
+        try:
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                f"{self.base_url}/api/generate",
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                for line in resp:
+                    if line:
+                        chunk = json.loads(line.decode("utf-8"))
+                        token = chunk.get("response", "")
+                        enhanced_full += token
+                        yield token
+        except Exception as exc:
+            pass
+            
+        suggestion.ollama_enhanced = enhanced_full.strip()
+
     def enhance_batch(
         self,
         analyses: list[AnalysisResult],

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  failsafe-ai:
+    build: .
+    container_name: failsafe-ai
+    ports:
+      - "8501:8501"
+    volumes:
+      # Map the docker socket to allow Docker-out-of-Docker (sandboxing)
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Map current directory for hot reloading or data persistence if needed
+      # - .:/app
+    environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+    # depends_on:
+    #   - ollama
+
+  # Uncomment the lines below to spin up a local Ollama service.
+  # Be aware that running LLMs requires significant memory and CPU/GPU.
+  # ollama:
+  #   image: ollama/ollama
+  #   container_name: ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+
+# volumes:
+#   ollama_data:

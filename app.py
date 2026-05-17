@@ -21,12 +21,13 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 # ── project modules ───────────────────────────────────────────────────────────
+from analyzer.failure_analyzer import FailureAnalyzer
 from injector.code_injector import CodeInjector
 from injector.data_injector import DataInjector
 from sandbox.executor import Executor
-from analyzer.failure_analyzer import FailureAnalyzer
-from suggestions.rule_engine import RuleSuggestionEngine
 from suggestions.ollama_suggester import OllamaSuggester
+from suggestions.hf_suggester import HFSuggester
+from suggestions.rule_engine import RuleSuggestionEngine
 from reports.report_generator import ReportGenerator
 from utils.logger import SessionLogger
 
@@ -285,6 +286,10 @@ def _get_rule_engine() -> RuleSuggestionEngine:
 def _get_ollama(model: str) -> OllamaSuggester:
     return OllamaSuggester(model=model)
 
+@st.cache_resource
+def _get_hf_suggester(model: str, token: str) -> HFSuggester:
+    return HFSuggester(model=model, token=token)
+
 
 def _badge(text: str, kind: str) -> str:
     return f'<span class="badge badge-{kind}">{text}</span>'
@@ -310,23 +315,48 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Sandbox Settings**")
     timeout_val = st.slider("Execution timeout (s)", 3, 20, SANDBOX_TIMEOUT)
+    use_docker = st.checkbox("Strict Docker Isolation", value=False, help="Requires Docker installed and running.")
+    strict_linting = st.checkbox("Strict Syntax Validation (Pre-flight)", value=True, help="Disable to allow the script to execute even if py_compile detects syntax/indentation errors early.")
 
     st.markdown("---")
-    st.markdown("**Ollama (optional)**")
-    use_ollama = st.checkbox("Enable AI-enhanced suggestions", value=False)
-    ollama_model = st.selectbox(
-        "Model",
-        ["mistral", "phi3", "llama3", "gemma"],
-        disabled=not use_ollama,
+    st.markdown("---")
+    st.markdown("**AI Provider (optional)**")
+    
+    ai_provider = st.radio(
+        "Select AI suggestions engine",
+        ["None", "Ollama (Local)", "Hugging Face (Cloud)"],
+        index=0,
     )
-    if use_ollama:
+    
+    use_ai = False
+    ai_suggester_instance = None
+    
+    if ai_provider == "Ollama (Local)":
+        ollama_model = st.selectbox("Model", ["mistral", "phi3", "llama3", "gemma"])
         ollama = _get_ollama(ollama_model)
-        ollama_ok = ollama.is_available()
-        if ollama_ok:
+        if ollama.is_available():
             st.success(f"✓ Ollama connected ({ollama_model})")
+            use_ai = True
+            ai_suggester_instance = ollama
         else:
-            st.warning("⚠ Ollama not reachable — rule-based only")
-            use_ollama = False
+            st.warning("⚠ Ollama not reachable")
+
+    elif ai_provider == "Hugging Face (Cloud)":
+        hf_model = st.selectbox("Model", ["mistralai/Mistral-7B-Instruct-v0.2", "meta-llama/Meta-Llama-3-8B-Instruct"])
+        
+        st.info("To prevent quota exhaustion, please provide your personal Hugging Face Access Token.")
+        hf_token = st.text_input("HF Access Token", value="", type="password", help="Requires a Hugging Face API token.")
+        
+        if hf_token:
+            hf_suggester = _get_hf_suggester(hf_model, hf_token)
+            if hf_suggester.is_available():
+                st.success(f"✓ HF API configured")
+                use_ai = True
+                ai_suggester_instance = hf_suggester
+            else:
+                st.warning("⚠ Missing huggingface_hub package")
+        else:
+            st.info("Please provide an HF Token to enable cloud models.")
 
     st.markdown("---")
     st.markdown(
@@ -476,7 +506,7 @@ if run_button:
     st.markdown("---")
     st.markdown('<p class="section-title">03 — Simulation Results</p>', unsafe_allow_html=True)
 
-    executor = Executor(timeout_seconds=timeout_val)
+    executor = Executor(timeout_seconds=timeout_val, use_docker=use_docker, strict_linting=strict_linting)
     analyzer = _get_analyzer()
     rule_engine = _get_rule_engine()
     session = SessionLogger()
@@ -486,7 +516,10 @@ if run_button:
     suggestions = []
 
     progress = st.progress(0, text="Initialising simulation…")
-    status_area = st.empty()
+    
+    # Placeholders for top-down rendering
+    summary_area = st.empty()
+    cards_area = st.container()
 
     n = len(selected_injections)
 
@@ -510,16 +543,31 @@ if run_button:
                 # containing only the failure snippet and run THAT
                 # inside the project directory (so local imports work).
 
-                # Extract only the injected snippet (from # [INJECTED] onward)
+                # Extract only the injected snippet (from __failsafe_injected__ onward)
                 lines = modified_source.splitlines()
                 inject_start = None
                 for li, line in enumerate(lines):
-                    if "# [INJECTED]" in line:
+                    if "__failsafe_injected__" in line:
                         inject_start = li
                         break
 
                 if inject_start is not None:
-                    standalone_src = "\n".join(lines[inject_start:]) + "\n"
+                    first_line = lines[inject_start]
+                    indent = len(first_line) - len(first_line.lstrip())
+                    
+                    extracted = []
+                    for line in lines[inject_start:]:
+                        if line.strip() == "":
+                            extracted.append("")
+                            continue
+                        
+                        current_indent = len(line) - len(line.lstrip())
+                        if current_indent < indent:
+                            break  # End of the block
+                            
+                        extracted.append(line[indent:])
+                        
+                    standalone_src = "\n".join(extracted) + "\n"
                 else:
                     # Fallback — run the full modified source
                     standalone_src = modified_source
@@ -591,9 +639,79 @@ print("Analysis complete.")
 
         # ── Suggest ───────────────────────────────────────────────────────
         suggestion = rule_engine.suggest(analysis)
-        if use_ollama and ollama_ok:
-            ollama_instance = _get_ollama(ollama_model)
-            ollama_instance.enhance(analysis, suggestion)
+        
+        # ── Render Card Live ──────────────────────────────────────────────
+        with cards_area:
+            card_class = "pass" if analysis.passed else "fail"
+            status_badge = _badge("PASS", "pass") if analysis.passed else _badge("FAIL", "fail")
+            sev_badge = _badge(
+                f"{SEV_ICON.get(analysis.severity, '⚪')} {analysis.severity}",
+                "crit" if analysis.severity == "critical" else
+                "fail" if analysis.severity == "high" else
+                "warn" if analysis.severity == "medium" else "pass",
+            )
+
+            st.markdown(
+                f"""
+                <div class="result-card {card_class}">
+                  <h3>Test {idx + 1}: <code>{analysis.injection_name}</code>
+                    &nbsp;{status_badge}&nbsp;{sev_badge}
+                  </h3>
+                  <div class="meta">
+                    scenario: {analysis.scenario[:120]}{'…' if len(analysis.scenario) > 120 else ''}
+                  </div>
+                  <div class="meta" style="margin-top:6px;">
+                    error: <strong style="color:#f78166;">{analysis.error_type or 'None'}</strong>
+                    &nbsp;|&nbsp; {analysis.execution_time_ms:.0f} ms
+                    {'&nbsp;|&nbsp; ⏱ TIMED OUT' if analysis.timed_out else ''}
+                  </div>
+                  <div class="root-cause">
+                    <strong style="color:#8b949e;font-size:0.7rem;letter-spacing:1px;
+                                  text-transform:uppercase;">Root Cause</strong><br/>
+                    {analysis.root_cause}
+                  </div>
+                  <div class="fix-text">
+                    <strong>Fix:</strong> {suggestion.short_fix}
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            with st.expander(f"▸ Details — Test {idx + 1}: {analysis.injection_name}"):
+                det_col1, det_col2 = st.columns(2)
+
+                with det_col1:
+                    st.markdown("**Error message**")
+                    st.code(analysis.error_message or "(none)", language="text")
+
+                    st.markdown("**Full traceback**")
+                    st.code(analysis.traceback or "(none)", language="text")
+
+                    if exec_result.stdout:
+                        st.markdown("**stdout**")
+                        st.code(exec_result.stdout, language="text")
+
+                with det_col2:
+                    st.markdown("**Code hint**")
+                    st.code(suggestion.code_hint, language="python")
+
+                    st.markdown("**Explanation**")
+                    st.markdown(
+                        f'<div class="root-cause">{suggestion.explanation}</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    if use_ai and ai_suggester_instance:
+                        st.markdown(f"**🤖 AI-enhanced suggestion ({ai_provider.split(' ')[0]})**")
+                        stream_container = st.empty()
+                        stream_gen = ai_suggester_instance.enhance_stream(analysis, suggestion)
+                        text = ""
+                        for token in stream_gen:
+                            text += token
+                            stream_container.markdown(f'<div class="root-cause" style="border-color:#58a6ff;">{text}▌</div>', unsafe_allow_html=True)
+                        stream_container.markdown(f'<div class="root-cause" style="border-color:#58a6ff;">{text}</div>', unsafe_allow_html=True)
+
         suggestions.append(suggestion)
 
         # ── Log ───────────────────────────────────────────────────────────
@@ -623,102 +741,30 @@ print("Analysis complete.")
     passed_c = session.passed_count
     critical = session.critical_count
 
-    st.markdown(
-        f"""
-        <div class="metric-grid">
-          <div class="metric-box">
-            <div class="number">{total}</div>
-            <div class="label">Tests run</div>
-          </div>
-          <div class="metric-box fail">
-            <div class="number">{failed}</div>
-            <div class="label">Failures</div>
-          </div>
-          <div class="metric-box pass">
-            <div class="number">{passed_c}</div>
-            <div class="label">Passes</div>
-          </div>
-          <div class="metric-box crit">
-            <div class="number">{critical}</div>
-            <div class="label">Critical</div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # ── Per-test result cards ─────────────────────────────────────────────────
-
-    for i, (ar, sug, er) in enumerate(
-        zip(analysis_results, suggestions, exec_results), start=1
-    ):
-        card_class = "pass" if ar.passed else "fail"
-        status_badge = _badge("PASS", "pass") if ar.passed else _badge("FAIL", "fail")
-        sev_badge = _badge(
-            f"{SEV_ICON.get(ar.severity, '⚪')} {ar.severity}",
-            "crit" if ar.severity == "critical" else
-            "fail" if ar.severity == "high" else
-            "warn" if ar.severity == "medium" else "pass",
-        )
-
+    with summary_area.container():
         st.markdown(
             f"""
-            <div class="result-card {card_class}">
-              <h3>Test {i}: <code>{ar.injection_name}</code>
-                &nbsp;{status_badge}&nbsp;{sev_badge}
-              </h3>
-              <div class="meta">
-                scenario: {ar.scenario[:120]}{'…' if len(ar.scenario) > 120 else ''}
+            <div class="metric-grid">
+              <div class="metric-box">
+                <div class="number">{total}</div>
+                <div class="label">Tests run</div>
               </div>
-              <div class="meta" style="margin-top:6px;">
-                error: <strong style="color:#f78166;">{ar.error_type or 'None'}</strong>
-                &nbsp;|&nbsp; {ar.execution_time_ms:.0f} ms
-                {'&nbsp;|&nbsp; ⏱ TIMED OUT' if ar.timed_out else ''}
+              <div class="metric-box fail">
+                <div class="number">{failed}</div>
+                <div class="label">Failures</div>
               </div>
-              <div class="root-cause">
-                <strong style="color:#8b949e;font-size:0.7rem;letter-spacing:1px;
-                              text-transform:uppercase;">Root Cause</strong><br/>
-                {ar.root_cause}
+              <div class="metric-box pass">
+                <div class="number">{passed_c}</div>
+                <div class="label">Passes</div>
               </div>
-              <div class="fix-text">
-                <strong>Fix:</strong> {sug.short_fix}
+              <div class="metric-box crit">
+                <div class="number">{critical}</div>
+                <div class="label">Critical</div>
               </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-        with st.expander(f"▸ Details — Test {i}: {ar.injection_name}"):
-            det_col1, det_col2 = st.columns(2)
-
-            with det_col1:
-                st.markdown("**Error message**")
-                st.code(ar.error_message or "(none)", language="text")
-
-                st.markdown("**Full traceback**")
-                st.code(ar.traceback or "(none)", language="text")
-
-                if er.stdout:
-                    st.markdown("**stdout**")
-                    st.code(er.stdout, language="text")
-
-            with det_col2:
-                st.markdown("**Code hint**")
-                st.code(sug.code_hint, language="python")
-
-                st.markdown("**Explanation**")
-                st.markdown(
-                    f'<div class="root-cause">{sug.explanation}</div>',
-                    unsafe_allow_html=True,
-                )
-
-                if sug.ollama_enhanced:
-                    st.markdown("**🤖 Ollama-enhanced suggestion**")
-                    st.markdown(
-                        f'<div class="root-cause" style="border-color:#58a6ff;">'
-                        f'{sug.ollama_enhanced}</div>',
-                        unsafe_allow_html=True,
-                    )
 
     # ── Report download ───────────────────────────────────────────────────────
 

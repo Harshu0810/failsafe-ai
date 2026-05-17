@@ -1,0 +1,30 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# Git
+.git/
+.gitignore
+
+# Output & Logs
+reports/output/*
+!reports/output/.gitkeep
+data/logs/*
+!data/logs/.gitkeep
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store

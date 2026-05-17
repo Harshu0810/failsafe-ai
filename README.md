@@ -66,6 +66,18 @@ The UI opens at **http://localhost:8501** in your browser.
 
 ---
 
+## Deployment (Docker)
+
+FailSafe AI natively supports deployment via Docker, which also enables **Strict Docker Isolation** for the execution sandbox.
+
+```bash
+# Start the entire stack
+docker-compose up --build
+```
+*Note: Make sure Docker is running on your host system. The Streamlit app runs at `http://localhost:8501`.*
+
+---
+
 ## Multi-file project upload
 
 You can upload a full Python project instead of a single script:
@@ -96,7 +108,7 @@ ollama pull gemma          # ~5 GB  — good balance
 ollama serve
 ```
 
-Then tick **"Enable AI-enhanced suggestions"** in the Streamlit sidebar.
+Then tick **"Enable AI-enhanced suggestions"** in the Streamlit sidebar. FailSafe AI will now **live-stream** tokens directly to the UI for immediate feedback!
 
 ---
 
@@ -263,12 +275,13 @@ pytest tests/test_failsafe.py -v --cov=. --cov-report=term-missing
 
 ## Architecture notes
 
-- **No exec() in the main process** — all user code runs in a child subprocess via `subprocess.run()`, so a crash or infinite loop cannot affect the Streamlit server.
+- **No exec() in the main process** — all user code runs in a child subprocess via `subprocess.run()`, or securely inside a sibling Docker container using `--rm`.
+- **Pre-flight Linting** — scripts are automatically checked for syntax errors using `py_compile` before execution to prevent trivial crashing.
+- **AST-Based Target Injection** — FailSafe parses code into an Abstract Syntax Tree (AST) to intelligently inject failures directly into the main execution blocks or function bodies.
 - **Stateless injectors** — each injection operates on an independent copy of the original source/data, so tests never interfere with each other.
-- **Multi-file project sandbox** — when multiple files are uploaded, `Executor.run_project()` writes them all to a temporary directory. Instead of executing the actual entry-point (which may be a blocking GUI or web server), FailSafe generates a standalone micro-script `_failsafe_test_.py` containing *only* the failure snippet. This script executes inside the project directory, so local imports resolve perfectly, but the user's application never actually blocks the sandbox.
-- **Auto-dependency installation** — if a `requirements.txt` is present in the upload, a child `pip install -r …` process runs first (120 s timeout). Any pip failure is surfaced as a `ModuleNotFoundError` in the analysis report rather than silently crashing.
-- **Rule table is just a list of dicts** — extending the analyzer with new error patterns requires only adding an entry to `_RULES` in `failure_analyzer.py`.
-- **Ollama is fully optional** — the system degrades gracefully to rule-based suggestions if Ollama is unreachable.
+- **Multi-file project sandbox** — when multiple files are uploaded, `Executor.run_project()` writes them all to a temporary directory. Instead of executing the actual entry-point, FailSafe generates a standalone micro-script `_failsafe_test_.py` containing *only* the failure snippet.
+- **Auto-dependency installation** — if a `requirements.txt` is present, a child `pip install -r …` process runs first.
+- **Ollama is fully optional** — the system degrades gracefully to rule-based suggestions. It uses asynchronous stream buffering to write tokens to the UI as they generate, reducing wait times.
 
 ---
 
@@ -279,12 +292,12 @@ pytest tests/test_failsafe.py -v --cov=. --cov-report=term-missing
 ```python
 # injector/code_injector.py
 
-from .code_injector import register, _insert_after_imports
+from .code_injector import register, _inject_ast
 
 @register("my_new_injection")
 def inject_my_failure(source: str) -> tuple[str, str]:
-    snippet = '\n# [INJECTED]\nraise RuntimeError("custom failure")\n'
-    return _insert_after_imports(source, snippet), "Injected a custom RuntimeError."
+    snippet = '__failsafe_injected__ = True\nraise RuntimeError("custom failure")\n'
+    return _inject_ast(source, snippet), "Injected a custom RuntimeError."
 ```
 
 ### Add a new analysis rule

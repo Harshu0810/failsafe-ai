@@ -77,9 +77,13 @@ class Executor:
         self,
         timeout_seconds: int = 8,
         python_executable: str | None = None,
+        use_docker: bool = False,
+        strict_linting: bool = True,
     ):
         self.timeout = timeout_seconds
         self.python = python_executable or sys.executable
+        self.use_docker = use_docker
+        self.strict_linting = strict_linting
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -240,19 +244,52 @@ class Executor:
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
+    def _lint_check(self, script_path: str, result: ExecutionResult) -> bool:
+        """Run syntax check to catch syntax errors before execution."""
+        try:
+            proc = subprocess.run(
+                [self.python, "-m", "py_compile", script_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=5,
+            )
+            if proc.returncode != 0:
+                result.exit_code = proc.returncode
+                result.error_type = "SyntaxError"
+                result.error_message = "Pre-flight linting failed due to syntax error."
+                
+                # Extract the syntax error
+                err = proc.stderr.strip() or proc.stdout.strip()
+                result.traceback = err
+                return False
+            return True
+        except Exception:
+            return True  # Fallback
+
     def _execute(self, script_path: str, result: ExecutionResult) -> ExecutionResult:
         """Fork a child process and wait up to self.timeout seconds."""
         t0 = time.perf_counter()
 
+        if getattr(self, "strict_linting", True) and not self._lint_check(script_path, result):
+            result.execution_time_ms = (time.perf_counter() - t0) * 1000
+            return result
+
+        cmd = [self.python, script_path]
+        if getattr(self, "use_docker", False):
+            script_dir = os.path.dirname(script_path)
+            basename = os.path.basename(script_path)
+            cmd = ["docker", "run", "--rm", "-v", f"{os.path.abspath(script_dir)}:/app", "-w", "/app", "python:3.10-slim", "python", basename]
+
         try:
             proc = subprocess.run(
-                [self.python, script_path],
+                cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 stdin=subprocess.DEVNULL,
                 timeout=self.timeout,
                 text=True,
-                env=os.environ.copy(),
+                env=os.environ.copy() if not getattr(self, "use_docker", False) else None,
             )
             result.stdout = proc.stdout.strip()
             result.stderr = proc.stderr.strip()
@@ -261,9 +298,23 @@ class Executor:
         except subprocess.TimeoutExpired as exc:
             result.timed_out = True
             result.exit_code = -1
-            result.stdout = (exc.stdout or b"").decode(errors="replace").strip()
-            result.stderr = (exc.stderr or b"").decode(errors="replace").strip()
+            result.stdout = (exc.stdout or b"").decode(errors="replace").strip() if isinstance(exc.stdout, bytes) else (exc.stdout or "").strip()
+            result.stderr = (exc.stderr or b"").decode(errors="replace").strip() if isinstance(exc.stderr, bytes) else (exc.stderr or "").strip()
             result.stderr += "\n[SANDBOX] Process killed — execution timeout exceeded."
+        except FileNotFoundError as exc:
+            result.exit_code = -1
+            result.error_type = "EnvironmentError"
+            result.error_message = f"Executable not found. If Docker is enabled, ensure 'docker' is in PATH. Details: {exc}"
+            result.stderr = result.error_message
+            result.traceback = result.error_message
+            return result
+        except Exception as exc:
+            result.exit_code = -1
+            result.error_type = "ExecutionError"
+            result.error_message = f"Failed to execute subprocess: {exc}"
+            result.stderr = result.error_message
+            result.traceback = result.error_message
+            return result
 
         result.execution_time_ms = (time.perf_counter() - t0) * 1000
 
@@ -283,19 +334,30 @@ class Executor:
         relative imports and file reads inside the project resolve correctly."""
         t0 = time.perf_counter()
 
+        if getattr(self, "strict_linting", True) and not self._lint_check(script_path, result):
+            result.execution_time_ms = (time.perf_counter() - t0) * 1000
+            return result
+
         env = os.environ.copy()
         env["PYTHONPATH"] = cwd + os.pathsep + env.get("PYTHONPATH", "")
 
+        cmd = [self.python, script_path]
+        if getattr(self, "use_docker", False):
+            rel_path = os.path.relpath(script_path, cwd)
+            # Use forward slashes for paths inside the linux container
+            rel_path = rel_path.replace(os.sep, "/")
+            cmd = ["docker", "run", "--rm", "-v", f"{os.path.abspath(cwd)}:/app", "-w", "/app", "python:3.10-slim", "python", rel_path]
+
         try:
             proc = subprocess.run(
-                [self.python, script_path],
+                cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 stdin=subprocess.DEVNULL,
                 timeout=self.timeout,
                 text=True,
-                cwd=cwd,
-                env=env,
+                cwd=cwd if not getattr(self, "use_docker", False) else None,
+                env=env if not getattr(self, "use_docker", False) else None,
             )
             result.stdout = proc.stdout.strip()
             result.stderr = proc.stderr.strip()
@@ -304,9 +366,23 @@ class Executor:
         except subprocess.TimeoutExpired as exc:
             result.timed_out = True
             result.exit_code = -1
-            result.stdout = (exc.stdout or b"").decode(errors="replace").strip()
-            result.stderr = (exc.stderr or b"").decode(errors="replace").strip()
+            result.stdout = (exc.stdout or b"").decode(errors="replace").strip() if isinstance(exc.stdout, bytes) else (exc.stdout or "").strip()
+            result.stderr = (exc.stderr or b"").decode(errors="replace").strip() if isinstance(exc.stderr, bytes) else (exc.stderr or "").strip()
             result.stderr += "\n[SANDBOX] Process killed — execution timeout exceeded."
+        except FileNotFoundError as exc:
+            result.exit_code = -1
+            result.error_type = "EnvironmentError"
+            result.error_message = f"Executable not found. If Docker is enabled, ensure 'docker' is in PATH. Details: {exc}"
+            result.stderr = result.error_message
+            result.traceback = result.error_message
+            return result
+        except Exception as exc:
+            result.exit_code = -1
+            result.error_type = "ExecutionError"
+            result.error_message = f"Failed to execute subprocess: {exc}"
+            result.stderr = result.error_message
+            result.traceback = result.error_message
+            return result
 
         result.execution_time_ms = (time.perf_counter() - t0) * 1000
         result.traceback = result.stderr
