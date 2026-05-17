@@ -2,11 +2,12 @@
 title: FailSafe AI
 emoji: ⚡
 colorFrom: red
-colorTo: orange
+colorTo: yellow
 sdk: docker
 pinned: false
 short_description: System Failure Simulator & Debug Assistant
 ---
+
 # ⚡ FailSafe AI — System Failure Simulator & Debug Assistant
 
 > Inject failures. Observe behaviour. Diagnose root causes. Suggest fixes.
@@ -30,13 +31,13 @@ User Input → Failure Injection → Execution Sandbox → Error Capture
 
 ## System requirements
 
-| Component | Minimum |
-|-----------|---------|
-| CPU | Intel 4th gen or newer |
-| RAM | 4 GB (8 GB recommended for Ollama) |
-| Disk | 500 MB (+ ~4 GB per Ollama model) |
-| Python | 3.10 + |
-| GPU | Not required |
+| Component | Minimum                            |
+| --------- | ---------------------------------- |
+| CPU       | Intel 4th gen or newer             |
+| RAM       | 4 GB (8 GB recommended for Ollama) |
+| Disk      | 500 MB (+ ~4 GB per Ollama model)  |
+| Python    | 3.10 +                             |
+| GPU       | Not required                       |
 
 Tested on Python 3.10 / 3.11 / 3.12.
 
@@ -83,7 +84,8 @@ FailSafe AI natively supports deployment via Docker, which also enables **Strict
 # Start the entire stack
 docker-compose up --build
 ```
-*Note: Make sure Docker is running on your host system. The Streamlit app runs at `http://localhost:8501`.*
+
+_Note: Make sure Docker is running on your host system. The Streamlit app runs at `http://localhost:8501`._
 
 ---
 
@@ -198,34 +200,34 @@ failsafe-ai/
 
 ## Code injection types (Python scripts)
 
-| Injection | Error triggered | Severity |
-|-----------|----------------|----------|
-| `undefined_variable` | NameError | High |
-| `wrong_type_operation` | TypeError | High |
-| `file_not_found` | FileNotFoundError | High |
-| `index_out_of_range` | IndexError | High |
-| `division_by_zero` | ZeroDivisionError | Critical |
-| `import_error` | ModuleNotFoundError | Critical |
-| `infinite_loop` | TimeoutError (sandbox) | Critical |
-| `recursion_error` | RecursionError | Critical |
-| `key_error` | KeyError | High |
-| `attribute_error` | AttributeError | Medium |
+| Injection              | Error triggered        | Severity |
+| ---------------------- | ---------------------- | -------- |
+| `undefined_variable`   | NameError              | High     |
+| `wrong_type_operation` | TypeError              | High     |
+| `file_not_found`       | FileNotFoundError      | High     |
+| `index_out_of_range`   | IndexError             | High     |
+| `division_by_zero`     | ZeroDivisionError      | Critical |
+| `import_error`         | ModuleNotFoundError    | Critical |
+| `infinite_loop`        | TimeoutError (sandbox) | Critical |
+| `recursion_error`      | RecursionError         | Critical |
+| `key_error`            | KeyError               | High     |
+| `attribute_error`      | AttributeError         | Medium   |
 
 ## Data injection types (CSV datasets)
 
-| Injection | What changes | Expected issue |
-|-----------|-------------|----------------|
-| `missing_values` | ~20 % of cells → NaN | ValueError / TypeError in aggregations |
-| `null_column` | Entire column → NaN | Downstream column ops fail |
-| `wrong_dtypes` | Numeric column → '42abc' strings | TypeError / ValueError |
-| `empty_dataset` | All rows removed | Empty-dataset errors |
-| `duplicate_rows` | All rows doubled | Skewed aggregations |
-| `wrong_column_name` | Column renamed → `_BROKEN` | KeyError |
-| `extra_whitespace` | String columns padded with spaces | Silent join failures |
+| Injection           | What changes                      | Expected issue                         |
+| ------------------- | --------------------------------- | -------------------------------------- |
+| `missing_values`    | ~20 % of cells → NaN              | ValueError / TypeError in aggregations |
+| `null_column`       | Entire column → NaN               | Downstream column ops fail             |
+| `wrong_dtypes`      | Numeric column → '42abc' strings  | TypeError / ValueError                 |
+| `empty_dataset`     | All rows removed                  | Empty-dataset errors                   |
+| `duplicate_rows`    | All rows doubled                  | Skewed aggregations                    |
+| `wrong_column_name` | Column renamed → `_BROKEN`        | KeyError                               |
+| `extra_whitespace`  | String columns padded with spaces | Silent join failures                   |
 
 ---
-<img width="1805" height="782" alt="image" src="https://github.com/user-attachments/assets/dafad9cb-3cec-46ea-b667-07104d1aa64f" />
 
+<img width="1805" height="782" alt="image" src="https://github.com/user-attachments/assets/dafad9cb-3cec-46ea-b667-07104d1aa64f" />
 
 ## Running tests
 
@@ -278,6 +280,7 @@ pytest tests/test_failsafe.py -v --cov=. --cov-report=term-missing
 **Recommended fix:**
 > Guard every division with a denominator != 0 check.
 ```
+
 <img width="848" height="776" alt="image" src="https://github.com/user-attachments/assets/9f0eb3fd-9d62-4785-a261-bec9c7fce43e" />
 
 ---
@@ -288,7 +291,7 @@ pytest tests/test_failsafe.py -v --cov=. --cov-report=term-missing
 - **Pre-flight Linting** — scripts are automatically checked for syntax errors using `py_compile` before execution to prevent trivial crashing.
 - **AST-Based Target Injection** — FailSafe parses code into an Abstract Syntax Tree (AST) to intelligently inject failures directly into the main execution blocks or function bodies.
 - **Stateless injectors** — each injection operates on an independent copy of the original source/data, so tests never interfere with each other.
-- **Multi-file project sandbox** — when multiple files are uploaded, `Executor.run_project()` writes them all to a temporary directory. Instead of executing the actual entry-point, FailSafe generates a standalone micro-script `_failsafe_test_.py` containing *only* the failure snippet.
+- **Multi-file project sandbox** — when multiple files are uploaded, `Executor.run_project()` writes them all to a temporary directory. Instead of executing the actual entry-point, FailSafe generates a standalone micro-script `_failsafe_test_.py` containing _only_ the failure snippet.
 - **Auto-dependency installation** — if a `requirements.txt` is present, a child `pip install -r …` process runs first.
 - **Ollama is fully optional** — the system degrades gracefully to rule-based suggestions. It uses asynchronous stream buffering to write tokens to the UI as they generate, reducing wait times.
 
@@ -337,5 +340,5 @@ def inject_my_failure(source: str) -> tuple[str, str]:
 
 ---
 
-*FailSafe AI — built for portfolio demonstration of fault-injection, sandboxing,
-and automated debug assistance. 100 % local, 0 % cloud.*
+_FailSafe AI — built for portfolio demonstration of fault-injection, sandboxing,
+and automated debug assistance. 100 % local, 0 % cloud._
