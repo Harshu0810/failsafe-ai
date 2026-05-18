@@ -521,6 +521,19 @@ if run_button:
     summary_area = st.empty()
     cards_area = st.container()
 
+    # ── Pre-install requirements.txt ONCE (avoids N redundant pip installs) ──
+    pip_preinstalled = False
+    if mode == "Python Script" and project_mode and project_files:
+        req_data = project_files.get("requirements.txt")
+        if req_data:
+            progress.progress(0, text="Installing project dependencies (one-time)…")
+            ok, msg = Executor.pre_install_requirements(req_data)
+            if ok:
+                pip_preinstalled = True
+                st.toast("✓ Dependencies installed", icon="📦")
+            else:
+                st.warning(f"⚠ Dependency install issue: {msg}")
+
     n = len(selected_injections)
 
     for idx, injection_name in enumerate(selected_injections):
@@ -581,6 +594,7 @@ if run_button:
                     entry_point=test_filename,
                     injection_name=injection_name,
                     scenario=scenario,
+                    skip_pip=pip_preinstalled,
                 )
             else:
                 exec_result = executor.run(

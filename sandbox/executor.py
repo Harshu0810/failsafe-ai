@@ -157,16 +157,51 @@ class Executor:
             except OSError:
                 pass
 
+    @staticmethod
+    def pre_install_requirements(req_content: bytes, python: str | None = None) -> tuple[bool, str]:
+        """
+        Install requirements ONCE before the simulation loop.
+        Returns (success: bool, message: str).
+        """
+        py = python or sys.executable
+        with tempfile.NamedTemporaryFile(
+            mode="wb", suffix=".txt", prefix="failsafe_req_", delete=False,
+        ) as tmp:
+            tmp.write(req_content)
+            req_path = tmp.name
+
+        try:
+            proc = subprocess.run(
+                [py, "-m", "pip", "install", "-r", req_path,
+                 "--quiet", "--disable-pip-version-check", "--no-input"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=180,
+                text=True,
+            )
+            if proc.returncode != 0:
+                return False, f"pip install failed:\n{proc.stderr}"
+            return True, "Dependencies installed successfully."
+        except subprocess.TimeoutExpired:
+            return False, "pip install timed out after 180 s."
+        finally:
+            try:
+                os.unlink(req_path)
+            except OSError:
+                pass
+
     def run_project(
         self,
         files: dict[str, bytes],
         entry_point: str,
         injection_name: str = "",
         scenario: str = "",
+        skip_pip: bool = False,
     ) -> ExecutionResult:
         """
         Write *files* (mapping of filename → bytes) to a temporary directory,
-        install any ``requirements.txt`` found, then execute *entry_point*.
+        optionally install any ``requirements.txt`` found, then execute
+        *entry_point*.
 
         Parameters
         ----------
@@ -176,6 +211,9 @@ class Executor:
             Filename of the script to execute (must be a key in *files*).
         injection_name / scenario : str
             Passed through to ExecutionResult for reporting.
+        skip_pip : bool
+            If True, skip ``pip install`` (useful when requirements were
+            pre-installed once before the simulation loop).
         """
         import shutil
 
@@ -194,41 +232,40 @@ class Executor:
                 with open(dest, mode) as fh:
                     fh.write(data)
 
-            # 2 — Install requirements if present
-            req_path = os.path.join(tmpdir, "requirements.txt")
-            if os.path.exists(req_path):
-                try:
-                    pip_proc = subprocess.run(
-                        [self.python, "-m", "pip", "install", "-r", req_path,
-                         "--quiet", "--disable-pip-version-check", "--no-input"],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        timeout=120,
-                        text=True,
-                    )
-                    if pip_proc.returncode != 0:
-                        # Surface pip errors into the result so they appear in the
-                        # failure analyser rather than silently crashing later
-                        result.stderr = (
-                            "[FAILSAFE] pip install failed:\n" + pip_proc.stderr
+            # 2 — Install requirements if present (unless pre-installed)
+            if not skip_pip:
+                req_path = os.path.join(tmpdir, "requirements.txt")
+                if os.path.exists(req_path):
+                    try:
+                        pip_proc = subprocess.run(
+                            [self.python, "-m", "pip", "install", "-r", req_path,
+                             "--quiet", "--disable-pip-version-check", "--no-input"],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            timeout=120,
+                            text=True,
                         )
-                        result.exit_code = pip_proc.returncode
-                        result.error_type = "ModuleNotFoundError"
-                        result.error_message = "Dependency installation failed."
+                        if pip_proc.returncode != 0:
+                            result.stderr = (
+                                "[FAILSAFE] pip install failed:\n" + pip_proc.stderr
+                            )
+                            result.exit_code = pip_proc.returncode
+                            result.error_type = "ModuleNotFoundError"
+                            result.error_message = "Dependency installation failed."
+                            result.traceback = result.stderr
+                            return result
+                    except subprocess.TimeoutExpired:
+                        result.stderr = (
+                            "[FAILSAFE] pip install timed out after 120 s.\n"
+                            "Tip: pre-install heavy packages in your virtual environment "
+                            "and omit them from the uploaded requirements.txt, "
+                            "or only list lightweight packages."
+                        )
+                        result.exit_code = -1
+                        result.error_type = "TimeoutError"
+                        result.error_message = "pip install exceeded the 120 s sandbox limit."
                         result.traceback = result.stderr
                         return result
-                except subprocess.TimeoutExpired:
-                    result.stderr = (
-                        "[FAILSAFE] pip install timed out after 120 s.\n"
-                        "Tip: pre-install heavy packages in your virtual environment "
-                        "and omit them from the uploaded requirements.txt, "
-                        "or only list lightweight packages."
-                    )
-                    result.exit_code = -1
-                    result.error_type = "TimeoutError"
-                    result.error_message = "pip install exceeded the 120 s sandbox limit."
-                    result.traceback = result.stderr
-                    return result
 
             # 3 — Execute the entry point inside the project directory
             entry_abs = os.path.join(tmpdir, entry_point)
