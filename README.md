@@ -227,7 +227,7 @@ failsafe-ai/
 
 ---
 
-<img width="1805" height="782" alt="image" src="https://github.com/user-attachments/assets/dafad9cb-3cec-46ea-b667-07104d1aa64f" />
+<img width="4000" height="1000" alt="image" src="https://github.com/user-attachments/assets/dafad9cb-3cec-46ea-b667-07104d1aa64f" />
 
 ## Running tests
 
